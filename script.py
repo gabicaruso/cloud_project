@@ -2,7 +2,7 @@
 # pipenv run python3 script.py
 
 # INSTALAÇÃO
-# pip3 install boto3                | pip3 install boto3
+# pip3 install boto3                | pipenv install boto3
 # pip3 install -U python-dotenv     | pipenv install -U python-dotenv
 # pip3 install awscli               | brew install awscli
 
