@@ -1,2 +1,3 @@
 .env
-keyGabi.pem
+GABI_KEY_NV.pem
+GABI_KEY_OH.pem
