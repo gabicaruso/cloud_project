@@ -40,6 +40,7 @@ client_nv = SESSION_NV.client("ec2")
 client_lb = SESSION_NV.client("elb")
 client_lbv2 = SESSION_NV.client("elbv2")
 client_as = SESSION_NV.client("autoscaling")
+client_cw = SESSION_NV.client("cloudwatch")
 
 # Get VPC ids for both regions
 VPC_OH = client_oh.describe_vpcs()["Vpcs"][0]["VpcId"]
@@ -124,6 +125,23 @@ def create_security_group(client, ec2, vpc_id, name):
             {
                 "FromPort": 8080,
                 "ToPort": 8080,
+                "IpProtocol": "tcp",
+                "IpRanges": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "Description": "HTTP",
+                    },
+                ],
+            },
+        ],
+    )
+
+    client.authorize_security_group_ingress(
+        GroupName=name,
+        IpPermissions=[
+            {
+                "FromPort": 80,
+                "ToPort": 80,
                 "IpProtocol": "tcp",
                 "IpRanges": [
                     {
@@ -337,7 +355,7 @@ def create_load_balancer(client, client_lb, name, sg_name):
         LoadBalancerName=name,
         Listeners=[
             {
-                'InstancePort': 80,
+                'InstancePort': 8080,
                 'InstanceProtocol': 'HTTP',
                 'LoadBalancerPort': 80,
                 'Protocol': 'HTTP',
@@ -354,7 +372,20 @@ def create_load_balancer(client, client_lb, name, sg_name):
             },
         ]
     )
-    print(f"[LOG] Created.")
+    print("[LOG] Created.")
+
+    print("[LOG] Adding health check...")
+    response = client_lb.configure_health_check(
+        LoadBalancerName=name,
+        HealthCheck={
+            'Target': 'TCP:8080',
+            'Interval': 30,
+            'Timeout': 15,
+            'UnhealthyThreshold': 5,
+            'HealthyThreshold': 2
+        }
+    )
+    print("[LOG] Done.")
 
 
 def delete_auto_scaling_group(client_as, name):
@@ -401,7 +432,7 @@ def create_auto_scaling_group(client, client_as, name, lc_name, lb_name):
         Tags=[
             {
                 'Key': 'Name',
-                'Value': 'ASGabi'
+                'Value': 'GABI_ASG'
             },
         ],
         AvailabilityZones=["us-east-1a", "us-east-1b"]
@@ -420,7 +451,7 @@ def delete_launch_configuration(client_as, name):
         print(f"[LOG] LaunchConfiguration '{name}' not found. ERROR: {e}.")
 
 
-def create_launch_configuration(client, name, sg, kp, db_pip):
+def create_launch_configuration(client_as, name, sg_id, key_name, db_pip):
     print(f"[LOG] Creating LaunchConfiguration with name '{name}'...")
 
     userdata = f"""#!/bin/sh
@@ -434,12 +465,12 @@ def create_launch_configuration(client, name, sg, kp, db_pip):
     """
 
     try:
-        client.create_launch_configuration(
+        client_as.create_launch_configuration(
             LaunchConfigurationName=name,
             ImageId="ami-00ddb0e5626798373",  # AMI Ubunto 18.04 para North Virginia
-            KeyName=kp,
+            KeyName=key_name,
             SecurityGroups=[
-                sg,
+                sg_id,
             ],
             UserData=userdata,
             InstanceType='t2.micro',
@@ -449,6 +480,44 @@ def create_launch_configuration(client, name, sg, kp, db_pip):
     except Exception as e:
         print(
             f"[LOG] Could not create LaunchConfiguration '{name}'. ERROR: {e}.")
+
+
+def put_extend_scaling_policy(client_as, client_cw, name, alarm_name, as_name):
+    print(f"[LOG] Creating ScalingPolicy with name '{name}'...")
+    response = client_as.put_scaling_policy(
+        AutoScalingGroupName=as_name,
+        PolicyName=name,
+        PolicyType='SimpleScaling',
+        AdjustmentType='ChangeInCapacity',
+        ScalingAdjustment=1,
+        Cooldown=120,
+    )
+    policyARN = response['PolicyARN']
+    client_cw.put_metric_alarm(
+        AlarmName=alarm_name,
+        AlarmDescription="Metade da CPU",
+        ActionsEnabled=True,
+        AlarmActions=[
+            policyARN,
+        ],
+        MetricName='CPUUtilization',
+        Namespace='AWS/EC2',
+        Statistic='Average',
+        Dimensions=[
+            {
+                'Name': 'AutoScalingGroupName',
+                'Value': as_name
+            },
+        ],
+        Period=120,
+        Unit='Percent',
+        EvaluationPeriods=2,
+        DatapointsToAlarm=2,
+        Threshold=50.0,
+        ComparisonOperator='GreaterThanOrEqualToThreshold',
+        TreatMissingData='ignore',
+    )
+    print("[LOG] Created.")
 
 
 if __name__ == "__main__":
@@ -462,6 +531,8 @@ if __name__ == "__main__":
     orm_lb_name = "GabiOrmLB"
     orm_as_name = "GABI_ORM_AS"
     orm_lc_name = "GABI_ORM_LC"
+    sp_name = "GABI_SP"
+    cw_name = "GABI_CW"
 
     # Create key pair
     key_pair(client_oh, kp_name_oh)
@@ -501,3 +572,9 @@ if __name__ == "__main__":
     # Create AS
     create_auto_scaling_group(client_nv, client_as,
                               orm_as_name, orm_lc_name, orm_lb_name)
+
+    # Put SP
+    put_extend_scaling_policy(client_as, client_cw,
+                              sp_name, cw_name, orm_as_name)
+
+    print("[LOG] Wait for the first instance GABI_ASG initialize on AWS EC2.")
