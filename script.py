@@ -577,4 +577,4 @@ if __name__ == "__main__":
     put_extend_scaling_policy(client_as, client_cw,
                               sp_name, cw_name, orm_as_name)
 
-    print("[LOG] Wait for the first instance GABI_ASG initialize on AWS EC2.")
+    print("[LOG] Wait for the first instance GABI_ASG to be initialized on AWS EC2.")
