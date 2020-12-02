@@ -77,7 +77,7 @@ def create_security_group(client, ec2, vpc_id, name):
         response = ec2.create_security_group(
             Description="SecurityGroup",
             GroupName=name,
-            VpcId=vpc_id,  # passar o describe pra ca e usar para o script inteiro
+            VpcId=vpc_id,
         )
         print("[LOG] Created.")
     except Exception as e:
@@ -239,7 +239,7 @@ def create_database_instance(client, ec2, name, db_sg_name, key_name):
         MinCount=1,
         MaxCount=1,
         InstanceType="t2.micro",
-        KeyName=key_name,  # key_pair
+        KeyName=key_name,
         SecurityGroups=[db_sg_name],
         UserData=userdata,
         TagSpecifications=[
@@ -290,7 +290,7 @@ def create_orm_instance(client, ec2, name, orm_sg_name, key_name, db_pip):
         MinCount=1,
         MaxCount=1,
         InstanceType="t2.micro",
-        KeyName=key_name,  # key_pair
+        KeyName=key_name,
         SecurityGroups=[orm_sg_name],
         UserData=userdata,
         TagSpecifications=[
