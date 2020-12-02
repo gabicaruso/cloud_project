@@ -318,10 +318,10 @@ def create_orm_instance(client, ec2, name, orm_sg_name, key_name, db_pip):
 
     if len(response["Reservations"]) > 0:
         instance_id = response["Reservations"][0]["Instances"][0]["InstanceId"]
-        print(f"[LOG] DB instance public ID: {instance_id}.")
+        print(f"[LOG] ORM instance public ID: {instance_id}.")
         return instance_id
     else:
-        print("[LOG] Error getting DB IP address.")
+        print("[LOG] Error getting ORM IP address.")
 
 
 def delete_load_balancer(client_lb, client_lbv2, name):
@@ -386,6 +386,26 @@ def create_load_balancer(client, client_lb, name, sg_name):
         }
     )
     print("[LOG] Done.")
+
+
+def get_load_balancer_dns(client_lb, lb_name):
+    print(f"[LOG] Getting LoadBalancer DNS...")
+
+    response = client_lb.describe_load_balancers(
+        LoadBalancerNames=[
+            lb_name,
+        ],
+    )
+
+    if len(response["LoadBalancerDescriptions"]) > 0:
+        lb_dns = response["LoadBalancerDescriptions"][0]["DNSName"]
+        print(f"[LOG] LoadBalancer DNS: {lb_dns}.")
+        file = open("dns.txt", "w")
+        file.write(lb_dns)
+        file.close()
+        return lb_dns
+    else:
+        print("[LOG] Error getting LoadBalancer DNS.")
 
 
 def delete_auto_scaling_group(client_as, name):
@@ -576,5 +596,8 @@ if __name__ == "__main__":
     # Put SP
     put_extend_scaling_policy(client_as, client_cw,
                               sp_name, cw_name, orm_as_name)
+
+    # Get LB DNS
+    get_load_balancer_dns(client_lb, orm_lb_name)
 
     print("[LOG] Wait for the first instance GABI_ASG to be initialized on AWS EC2.")

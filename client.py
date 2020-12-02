@@ -3,7 +3,10 @@ from datetime import datetime
 import json
 import sys
 
-url = "http://gabiormlb-2147162200.us-east-1.elb.amazonaws.com/tasks"
+with open("dns.txt", "r") as file:
+    dns = file.read()
+
+url = "http://" + dns + "/tasks"
 
 for arg in sys.argv:
     print(arg)
