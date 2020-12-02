@@ -1,6 +1,6 @@
 # Projeto Cloud
 
-*Projeto Final da disciplina de Computação em Nuvem*
+*Projeto Final da disciplina de Computação em Nuvem - 2020.2*
 
 ## Descrição
 
