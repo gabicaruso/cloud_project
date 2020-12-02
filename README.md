@@ -56,7 +56,7 @@ python3 client.py del_tasks
 
 #### Para acessar o site:
 ```
-dns = gabiormlb-xxxxxxxxx.us-east-1.elb.amazonaws.com   # DNS do Load Balancer
+http://<LoadBalancerDNS>/tasks/
 http://gabiormlb-xxxxxxxxx.us-east-1.elb.amazonaws.com/tasks/
 ```
 
