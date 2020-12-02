@@ -28,10 +28,13 @@ pip3 install awscli
 pip3 install requests
 ```
 
+___
+
 ### Para rodar o script:
 ```python
 python3 script.py
 ```
+
 ___
 
 ### Client
@@ -50,6 +53,7 @@ python3 client.py add_task <title> <description>
 ```python
 python3 client.py del_tasks
 ```
+
 ___
 
 ### Alternativa: Instalação do Pipenv
@@ -66,7 +70,8 @@ pipenv install <pacote>
 ```python
 pipenv run python3 <file>
 ```
-__
+
+___
 
 ### Configuração *(apenas se não utilizar dotenv)*
 ```
