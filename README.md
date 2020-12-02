@@ -54,6 +54,12 @@ python3 client.py add_task <title> <description>
 python3 client.py del_tasks
 ```
 
+#### Para acessar o site:
+```
+dns = gabiormlb-xxxxxxxxx.us-east-1.elb.amazonaws.com   # DNS do Load Balancer
+http://gabiormlb-xxxxxxxxx.us-east-1.elb.amazonaws.com/tasks/
+```
+
 ___
 
 ### Alternativa: Instalação do Pipenv
